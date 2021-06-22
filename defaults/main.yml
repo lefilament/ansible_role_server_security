@@ -1,0 +1,10 @@
+---
+default_maintenance_email: "maintenance@example.org"
+default_smtp_server: "smtp.example.org"
+default_sshd_port: 10022
+docker_userns_remap: true
+dockremap_subuid: 165536
+dockremap_subgid: 165536
+logstash_port: 5044
+logstash_public_ip: "127.0.0.1"
+private_pull: false
