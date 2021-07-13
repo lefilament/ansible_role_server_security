@@ -1,4 +1,5 @@
 ---
+server_security__manage_mail: 'enabled'
 default_maintenance_email: "maintenance@example.org"
 default_smtp_server: "smtp.example.org"
 default_sshd_port: 10022

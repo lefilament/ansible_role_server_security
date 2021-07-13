@@ -1,0 +1,27 @@
+---
+- name: remove mail packages not necessary
+  apt:
+    name: [bsd-mailx mailutils postfix]
+    autoremove: true
+    state: absent
+  when: ansible_os_family == "Debian"
+
+- name: check that ssmtp is installed
+  package: name=ssmtp state=present
+
+- name: Check that sendmail redirects to ssmtp
+  file:
+    src: ssmtp
+    dest: /usr/sbin/sendmail
+    force: true
+    owner: root
+    group: mail
+    state: link
+
+- name: configuration file for ssmtp
+  template:
+    src: ssmtp.conf.j2
+    dest: /etc/ssmtp/ssmtp.conf
+    owner: root
+    group: mail
+    mode: '0640'

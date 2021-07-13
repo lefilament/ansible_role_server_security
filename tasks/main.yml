@@ -1,14 +1,7 @@
 ---
-
-- name: remove mail packages not necessary
-  apt:
-    name: [bsd-mailx mailutils postfix]
-    autoremove: true
-    state: absent
-  when: ansible_os_family == "Debian"
-
-- name: check that ssmtp is installed
-  package: name=ssmtp state=present
+- name: import mail tasks
+  import_tasks: mail.yml
+  when: server_security__manage_mail == 'enabled'
 
 - name: install fail2ban, iptables-persistent and auditd
   package:
@@ -29,15 +22,6 @@
       - auditd
     state: present
   when: ansible_check_mode
-
-- name: Check that sendmail redirects to ssmtp
-  file:
-    src: ssmtp
-    dest: /usr/sbin/sendmail
-    force: true
-    owner: root
-    group: mail
-    state: link
 
 - name: make fail2ban persistent
   service: name=fail2ban enabled=yes state=started
@@ -136,11 +120,3 @@
     group: root
     mode: '0640'
   notify: restart auditd
-
-- name: configuration file for ssmtp
-  template:
-    src: ssmtp.conf.j2
-    dest: /etc/ssmtp/ssmtp.conf
-    owner: root
-    group: mail
-    mode: '0640'

@@ -1,6 +1,6 @@
 server_security
 =========
-
+The main repo for this role is on [Le Filament GitLab](https://sources.le-filament.com/lefilament/ansible-roles/server_security.git)
 This roles installs and configures security features on server :
 * auditd
 * iptables
@@ -32,6 +32,7 @@ Other variables that are used in this role (with default values in defaults/main
 * logstash_port : port on which logstash server is listening for log collection (defaults to 5044)
 * logstash_public_ip : logstash public ip address for log collection (defaults to 127.0.0.1)
 * private_pull : whether a scheduled pulling of files via SFTP is to be performed on server (defaults to false)
+* `server_security__manage_mail`: manage e-mails with `ssmtp` (default to ̀enabled`)
 
 
 Dependencies
