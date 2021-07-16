@@ -79,6 +79,10 @@
 # WEB
 -A OUTPUT -p tcp -m tcp --dport 80 -j ACCEPT
 -A OUTPUT -p tcp -m tcp --dport 443 -j ACCEPT
+{% if inventory_hostname in groups.gitlab %}
+# Plesk WebHooks
+-A OUTPUT -p tcp -m tcp --dport 8443 -j ACCEPT
+{% endif %}
 # DNS
 -A OUTPUT -p tcp -m tcp --dport 53 -j ACCEPT
 -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT
