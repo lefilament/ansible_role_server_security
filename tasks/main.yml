@@ -1,122 +1,129 @@
 ---
-- name: import mail tasks
-  import_tasks: mail.yml
+- name: Import mail tasks
+  ansible.builtin.import_tasks: mail.yml
   when: server_security__manage_mail == 'enabled'
 
-- name: install fail2ban, iptables-persistent and auditd
-  package:
-    name:
-      - fail2ban
-      - iptables-persistent
-      - auditd
-    state: present
+- name: Install fail2ban, iptables-persistent and auditd
+  ansible.builtin.package:
+      name:
+          - fail2ban
+          - iptables-persistent
+          - auditd
+      state: present
   async: 120
   poll: 10
   when: not ansible_check_mode
 
-- name: check presence of fail2ban, iptables-persistent and auditd packages
-  package:
-    name:
-      - fail2ban
-      - iptables-persistent
-      - auditd
-    state: present
+- name: Check presence of fail2ban, iptables-persistent and auditd packages
+  ansible.builtin.package:
+      name:
+          - fail2ban
+          - iptables-persistent
+          - auditd
+      state: present
   when: ansible_check_mode
 
-- name: make fail2ban persistent
-  service: name=fail2ban enabled=yes state=started
+- name: Make fail2ban persistent
+  ansible.builtin.service:
+      name: fail2ban
+      enabled: true
+      state: started
 
-- name: make sure netfilter-persistent is enabled
-  service: name=netfilter-persistent enabled=yes state=started
+- name: Make sure netfilter-persistent is enabled
+  ansible.builtin.service:
+      name: netfilter-persistent
+      enabled: true
+      state: started
 
-- name: make sure auditd is enabled
-  service: name=auditd enabled=yes state=started
+- name: Make sure auditd is enabled
+  ansible.builtin.service:
+      name: auditd
+      enabled: true
+      state: started
 
-- name: push specific fail2ban jail configuration file
-  template:
-    src: "jail.{{ ansible_distribution }}{{ ansible_distribution_major_version }}.j2"
-    dest: "/etc/fail2ban/jail.local"
-    owner: 'root'
-    group: 'root'
-    mode: '0644'
+- name: Push specific fail2ban jail configuration file
+  ansible.builtin.template:
+      src: "jail.{{ ansible_distribution }}{{ ansible_distribution_major_version }}.j2"
+      dest: "/etc/fail2ban/jail.local"
+      owner: 'root'
+      group: 'root'
+      mode: '0644'
   when: ansible_os_family == "Debian"
-  notify: restart fail2ban
+  notify: Restart fail2ban
   tags: fail2ban
 
-- name: push specific fail2ban actions
-  template:
-    src: "{{ item }}.j2"
-    dest: "/etc/fail2ban/{{ item }}.local"
-    owner: 'root'
-    group: 'root'
-    mode: '0644'
+- name: Push specific fail2ban actions
+  ansible.builtin.template:
+      src: "{{ item }}.j2"
+      dest: "/etc/fail2ban/{{ item }}.local"
+      owner: 'root'
+      group: 'root'
+      mode: '0644'
   with_items:
-    - action.d/sendmail-common
-    - action.d/sendmail-whois-lines
+      - action.d/sendmail-common
+      - action.d/sendmail-whois-lines
   when: ansible_os_family == "Debian"
-  notify: restart fail2ban
+  notify: Restart fail2ban
   tags: fail2ban
 
-- name: push specific fail2ban filters
-  copy:
-    src: "{{ item }}"
-    dest: "/etc/fail2ban/filter.d/{{ item }}.local"
-    owner: 'root'
-    group: 'root'
-    mode: '0644'
-  with_items:
-    - odoo-auth
-    - traefik-auth
+- name: Push specific fail2ban filters
+  ansible.builtin.copy:
+      src: traefik-auth
+      dest: "/etc/fail2ban/filter.d/traefik-auth.conf"
+      owner: 'root'
+      group: 'root'
+      mode: '0644'
+      force: false
   when: inventory_hostname in groups.docker
-  notify: restart fail2ban
+  notify: Restart fail2ban
   tags: fail2ban
 
-- name: create iptables configuration
-  template:
-    src: iptables.conf.j2
-    dest: /etc/iptables/rules.v4
-    owner: root
-    group: root
-    mode: '0600'
+- name: Create iptables configuration
+  ansible.builtin.template:
+      src: iptables.conf.j2
+      dest: /etc/iptables/rules.v4
+      owner: root
+      group: root
+      mode: '0600'
   notify:
-    - restore-iptables
-    - restart fail2ban
-    - restart docker
+      - Restore iptables
+      - Restart fail2ban
+      - Restart docker
 
-- name: create ip6tables configuration
-  template:
-    src: ip6tables.conf.j2
-    dest: "/etc/iptables/rules.v6"
-    owner: root
-    group: root
-    mode: '0600'
+- name: Create ip6tables configuration
+  ansible.builtin.template:
+      src: ip6tables.conf.j2
+      dest: "/etc/iptables/rules.v6"
+      owner: root
+      group: root
+      mode: '0600'
   notify:
-    - restore-iptables
-    - restart fail2ban
-    - restart docker
+      - Restore iptables
+      - Restart fail2ban
+      - Restart docker
 
-- name: push iptables rsyslog configuration
-  copy:
-    src: rsyslog.d-iptables
-    dest: /etc/rsyslog.d/33-iptables.conf
-    owner: root
-    group: root
-    mode: '0644'
-  notify: restart rsyslog
+- name: Push iptables rsyslog configuration
+  ansible.builtin.copy:
+      src: rsyslog.d-iptables
+      dest: /etc/rsyslog.d/33-iptables.conf
+      owner: root
+      group: root
+      mode: '0644'
+  notify: Restart rsyslog
 
-- name: push iptables logrotate configuration
-  copy:
-    src: logrotate.d-iptables
-    dest: /etc/logrotate.d/iptables
-    owner: root
-    group: root
-    mode: '0644'
+- name: Push iptables logrotate configuration
+  ansible.builtin.copy:
+      src: logrotate.d-iptables
+      dest: /etc/logrotate.d/iptables
+      owner: root
+      group: root
+      mode: '0644'
 
-- name: configuration file for auditd
-  template:
-    src: audit.rules.j2
-    dest: /etc/audit/rules.d/audit.rules
-    owner: root
-    group: root
-    mode: '0640'
-  notify: restart auditd
+- name: Configuration file for auditd
+  ansible.builtin.template:
+      src: audit.rules.j2
+      dest: /etc/audit/rules.d/audit.rules
+      owner: root
+      group: root
+      mode: '0640'
+  notify: Restart auditd

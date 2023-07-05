@@ -1,0 +1,90 @@
+[INCLUDES]
+before = paths-debian.conf
+
+[DEFAULT]
+# MISC
+ignoreip = 127.0.0.1/8{% if inventory_hostname in groups.docker | default([]) %} 172.16.0.0/12 192.168.0.0/16{% endif %}{% for host in groups.docker_nagios | default([]) %} {{ hostvars[host].ansible_host }}/32{% endfor %}
+
+ignorecommand =
+bantime  = 86400 ; ban for 1 day
+findtime  = 3600 ; search for 1 hour
+maxretry = 3
+maxmatches = %(maxretry)s
+backend = polling
+usedns = warn
+logencoding = auto
+enabled = false
+mode = normal
+filter = %(__name__)s[mode=%(mode)s]
+
+# ACTIONS
+destemail = {{ default_maintenance_email }}
+sender = {{ inventory_hostname|lower }}_server@{{ inventory_hostname|lower }}.server
+mta = sendmail
+protocol = tcp
+chain = INPUT
+port = 0:65535
+fail2ban_agent = Fail2Ban/%(fail2ban_version)s
+banaction = iptables-multiport
+banaction_allports = iptables-allports
+action_ = %(banaction)s[port="%(port)s", protocol="%(protocol)s", chain="%(chain)s"]
+action = %(action_)s
+
+# JAILS
+[sshd]
+backend = systemd
+enabled = true
+logpath = /var/log/auth.log
+mode    = aggressive
+port    = {{ default_sshd_port }}
+
+{% if inventory_hostname in groups.gitlab | default([]) %}
+[gitlab]
+enabled = true
+logpath = /var/log/gitlab/gitlab-rails/application.log
+port    = http,https
+
+[nginx-http-auth]
+enabled	= true
+logpath = /var/log/gitlab/nginx/*error.log
+port    = http,https
+
+[nginx-botsearch]
+enabled	 = true
+logpath  = /var/log/gitlab/nginx/*error.log
+maxretry = 2
+port     = http,https
+
+{% endif %}
+{% if inventory_hostname in groups.odoo_server | default([]) or inventory_hostname in groups.owncloud_server | default([]) %}
+[nginx-http-auth]
+enabled	= true
+logpath = /var/log/nginx/*error.log
+port    = http,https
+
+[nginx-botsearch]
+enabled	 = true
+logpath  = /var/log/nginx/*error.log
+maxretry = 2
+port     = http,https
+
+{% endif %}
+[recidive]
+banaction = %(banaction_allports)s
+bantime  = 1w
+enabled  = true
+findtime = 1d
+logpath  = /var/log/fail2ban.log
+{% if inventory_hostname in groups.docker | default([]) and inventory_hostname not in groups.docker_nextcloud | default([]) %}
+
+[traefik-auth]
+chain    = FORWARD
+enabled  = true
+{% if docker_userns_remap %}
+logpath  = /var/lib/docker/{{ dockremap_subuid | default("*") }}.{{ dockremap_subgid | default("*") }}/volumes/inverseproxy_logs/_data/access.log
+{% else %}
+logpath  = /var/lib/docker/volumes/inverseproxy_logs/_data/access.log
+{% endif %}
+mode     = aggressive
+port     = http,https
+{% endif %}

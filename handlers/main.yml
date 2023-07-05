@@ -1,17 +1,27 @@
 ---
 
-- name: restore-iptables
-  service: name=netfilter-persistent state=restarted
+- name: Restore iptables
+  ansible.builtin.service:
+      name: netfilter-persistent
+      state: restarted
 
-- name: restart fail2ban
-  service: name=fail2ban state=restarted
+- name: Restart fail2ban
+  ansible.builtin.service:
+      name: fail2ban
+      state: restarted
 
-- name: restart docker
-  service: name=docker state=restarted
+- name: Restart docker
+  ansible.builtin.service:
+      name: docker
+      state: restarted
   when: inventory_hostname in groups.docker
 
-- name: restart auditd
-  service: name=auditd state=restarted
+- name: Restart auditd
+  ansible.builtin.service:
+      name: auditd
+      state: restarted
 
-- name: restart rsyslog
-  service: name=rsyslog state=restarted
+- name: Restart rsyslog
+  ansible.builtin.service:
+      name: rsyslog
+      state: restarted
